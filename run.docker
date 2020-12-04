@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# Check if network already existing
+docker network inspect mqnet
+if [ $? -ne 0 ]
+then
+	docker network create --driver bridge mqnet
+fi
+
+# Build docker image
+docker build --tag mqc-gcp-adapter:1.0.0 .
+
+if [ $? -eq 0 ]
+then
+	# deploy mq
+	# docker run --env LICENSE=accept --env MQ_QMGR_NAME=QM1 --name mq_server --network mqnet --publish 1415:1414 --publish 9444:9443 --detach ibmcom/mq
+	# docker exec $(docker ps -aqf "name=mq_server") echo "DEFINE SUB('default') TOPICOBJ('DEV.BASE.TOPIC') DEST('DEV.QUEUE.3') REPLACE" | runmqsc QM1 
+	# deploy gcp mq adapter
+	docker run -e MQ_CONN="mq_server\(1414\)" --detach --network mqnet --name mqgcp mqc-gcp-adapter:1.0.0
+fi
